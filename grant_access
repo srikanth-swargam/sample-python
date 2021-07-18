@@ -1,0 +1,37 @@
+import subprocess
+from subprocess import Popen, PIPE
+import sys
+
+def grant_access(user, ad_group):
+
+    command = ("hdfs dfs -mkdir -p /tenants/{0};"
+               "hdfs dfs -chown hdfs:{1} /tenants/{0} ;"
+               "hdfs dfs -chmod 775 /tenants/{0};"
+               "hdfs dfsadmin -setSpaceQuota 500gb[usable] /tenants/{0};"
+               "hdfs dfs -setfacl -m group:{1}:RWX /tenants/{0} ").format(user, ad_group)
+
+    ret = subprocess.run(command, capture_output=True, shell=True)
+
+    # before Python 3.7:
+    # ret = subprocess.run(command, stdout=subprocess.PIPE, shell=True)
+
+    print(ret.stdout.decode())
+
+    #command to validate the return
+
+if __name__ == '__main__':
+    
+    # Validate the size of the input parameters
+    if len(sys.argv) < 2:
+        print "Invalid number of parameter: python script.py <user> <ad_group>"
+        raise
+    user = sys.argv[0].strip()
+    ad_group = sys.argv[1].strip()
+
+    # Kinit using hdfs user to execute the grant permissions
+    kinit_args = ['/usr/bin/kinit', '-kt', '/home/username/username.keytab', 'username@realm']
+    subp = Popen(kinit_args, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    subp.wait()
+
+    grant_access('user', 'ad_group')
+
